@@ -3,9 +3,11 @@ import type { FormEvent } from 'react'
 import './App.css'
 import { askDraftAssistant, getRecommendation } from './mockApi'
 import { VALID_CARDS } from './validCards'
+import { isKnownSosCard } from './sosLookup'
 import type {
   ChatMessage,
   DraftContext,
+  ProductSetId,
   Rank,
   RecommendationResponse,
 } from './types'
@@ -42,7 +44,10 @@ function extractComparedCards(questionText: string): string[] {
   return []
 }
 
-function findUnknownCards(cards: string[]): string[] {
+function findUnknownCardsForSet(cards: string[], productSet: ProductSetId): string[] {
+  if (productSet === 'sos') {
+    return cards.filter((card) => !isKnownSosCard(card))
+  }
   return cards.filter((card) => !VALID_CARD_SET.has(normalizeCardName(card)))
 }
 
@@ -54,6 +59,7 @@ function parseCardList(input: string): string[] {
 }
 
 function App() {
+  const [productSet, setProductSet] = useState<ProductSetId>('tmt')
   const [packNumber, setPackNumber] = useState(1)
   const [pickNumber, setPickNumber] = useState(1)
   const [rank, setRank] = useState<Rank>('gold')
@@ -87,11 +93,41 @@ function App() {
   )
 
   const draftContext: DraftContext = {
+    productSet,
     packNumber,
     pickNumber,
     rank,
     availableCards: parsedAvailableCards,
     poolCards: parsedPoolCards,
+  }
+
+  function handleProductSetChange(next: ProductSetId) {
+    setProductSet(next)
+    setRecommendation(null)
+    setContextError(null)
+    if (next === 'sos') {
+      setAvailableCardsInput('Together as One\nPracticed Offense\nAntiquities on the Loose')
+      setPoolCardsInput('')
+      setQuestion('Is Together as One better than Practiced Offense?')
+      setChatMessages([
+        {
+          id: 'welcome-sos',
+          role: 'assistant',
+          text: 'Beta mode: ask simple GIH WR questions — e.g. compare two cards by name, or rank the cards you list.',
+        },
+      ])
+    } else {
+      setAvailableCardsInput("The Last Ronin\nShredder's Technique\nMona Lisa, Science Geek")
+      setPoolCardsInput('Zoo Escapees\nAnchovy & Banana Pizza')
+      setQuestion("Is The Last Ronin better than Shredder's Technique here?")
+      setChatMessages([
+        {
+          id: 'welcome-tmt',
+          role: 'assistant',
+          text: 'Set draft context and ask a question to compare picks.',
+        },
+      ])
+    }
   }
 
   async function handleRecommend(event: FormEvent<HTMLFormElement>) {
@@ -101,7 +137,7 @@ function App() {
       setContextError('Add at least one card to the available cards list.')
       return
     }
-    const unknownAvailableCards = findUnknownCards(draftContext.availableCards)
+    const unknownAvailableCards = findUnknownCardsForSet(draftContext.availableCards, productSet)
     if (unknownAvailableCards.length > 0) {
       setContextError(
         unknownAvailableCards.length === 1
@@ -136,7 +172,7 @@ function App() {
     setIsLoadingChat(true)
 
     try {
-      const unknownAvailableCards = findUnknownCards(draftContext.availableCards)
+      const unknownAvailableCards = findUnknownCardsForSet(draftContext.availableCards, productSet)
       if (unknownAvailableCards.length > 0) {
         const assistantMessage: ChatMessage = {
           id: crypto.randomUUID(),
@@ -152,7 +188,7 @@ function App() {
 
       const comparedCards = extractComparedCards(userMessage.text)
       if (comparedCards.length > 0) {
-        const unknownComparedCards = findUnknownCards(comparedCards)
+        const unknownComparedCards = findUnknownCardsForSet(comparedCards, productSet)
         if (unknownComparedCards.length > 0) {
           const assistantMessage: ChatMessage = {
             id: crypto.randomUUID(),
@@ -198,21 +234,42 @@ function App() {
     }
   }
 
+  const isSosBeta = productSet === 'sos'
+
   return (
     <main className="app-shell">
       <header className="app-header">
-        <p className="deploy-test-banner" role="status">
-          Visible deploy test · Phase 2 prototype prep
-        </p>
-        <h1>Draft Pick Assistant — Phase 2 prototype prep</h1>
-        <p>
-          Mock recommendation and chat for now. Next: Supabase + real draft stats.
+        <label className="set-picker">
+          <span className="set-picker-label">Data set</span>
+          <select
+            value={productSet}
+            onChange={(event) => handleProductSetChange(event.target.value as ProductSetId)}
+          >
+            <option value="tmt">Teenage Mutant Ninja Turtles (TMT)</option>
+            <option value="sos">SOS (Beta)</option>
+          </select>
+        </label>
+        {isSosBeta ? (
+          <p className="beta-disclaimer" role="note">
+            Beta: stats from early-season aggregates; GIH WR only; draft-specific modeling coming later.
+          </p>
+        ) : null}
+        <h1>Draft Pick Assistant</h1>
+        <p className="tagline">
+          {isSosBeta
+            ? 'GIH WR quick stats from SOS aggregates — compare cards or rank your short list.'
+            : 'TMT Premier Draft explorer — mock scoring until Supabase-backed stats ship.'}
         </p>
       </header>
 
       <section className="layout">
         <form className="panel context-panel" onSubmit={handleRecommend}>
-          <h2>Draft Context</h2>
+          <h2>{isSosBeta ? 'GIH WR short list' : 'Draft Context'}</h2>
+          {isSosBeta ? (
+            <p className="beta-field-note">
+              Pack, pick, and rank are not used in Beta — ranking uses GIH WR only.
+            </p>
+          ) : null}
           <label>
             Pack Number
             <input
@@ -220,6 +277,7 @@ function App() {
               min={1}
               max={3}
               value={packNumber}
+              disabled={isSosBeta}
               onChange={(event) => setPackNumber(Number(event.target.value))}
             />
           </label>
@@ -230,12 +288,17 @@ function App() {
               min={1}
               max={15}
               value={pickNumber}
+              disabled={isSosBeta}
               onChange={(event) => setPickNumber(Number(event.target.value))}
             />
           </label>
           <label>
             Rank
-            <select value={rank} onChange={(event) => setRank(event.target.value as Rank)}>
+            <select
+              value={rank}
+              disabled={isSosBeta}
+              onChange={(event) => setRank(event.target.value as Rank)}
+            >
               <option value="bronze">Bronze</option>
               <option value="silver">Silver</option>
               <option value="gold">Gold</option>
@@ -250,20 +313,31 @@ function App() {
               rows={4}
               value={availableCardsInput}
               onChange={(event) => setAvailableCardsInput(event.target.value)}
-              placeholder={"The Last Ronin\nShredder's Technique\nMona Lisa, Science Geek"}
+              placeholder={
+                isSosBeta
+                  ? 'Together as One\nPracticed Offense\nAntiquities on the Loose'
+                  : "The Last Ronin\nShredder's Technique\nMona Lisa, Science Geek"
+              }
             />
           </label>
           <label>
-            Pool Cards (one per line)
+            Pool Cards (one per line){' '}
+            {isSosBeta ? <span className="optional-hint">(optional in Beta)</span> : null}
             <textarea
               rows={4}
               value={poolCardsInput}
               onChange={(event) => setPoolCardsInput(event.target.value)}
-              placeholder={'Zoo Escapees\nAnchovy & Banana Pizza'}
+              placeholder={
+                isSosBeta ? 'Optional — not used for GIH ranking yet' : 'Zoo Escapees\nAnchovy & Banana Pizza'
+              }
             />
           </label>
           <button type="submit" disabled={isLoadingRecommendation}>
-            {isLoadingRecommendation ? 'Evaluating...' : 'Get Recommendation'}
+            {isLoadingRecommendation
+              ? 'Evaluating...'
+              : isSosBeta
+                ? 'Rank by GIH WR'
+                : 'Get Recommendation'}
           </button>
           {contextError ? <p className="context-error">{contextError}</p> : null}
         </form>
@@ -280,18 +354,19 @@ function App() {
                   <strong>Confidence:</strong> {(recommendation.confidence * 100).toFixed(0)}%
                 </p>
                 <p>
-                  <strong>Win Rate:</strong>{' '}
+                  <strong>{isSosBeta ? 'GIH WR (top pick):' : 'Win Rate:'}</strong>{' '}
                   {(recommendation.evidence.winRateTopPick * 100).toFixed(1)}%
                 </p>
                 <p>
-                  <strong>Sample Size:</strong> {recommendation.evidence.sampleSize}
+                  <strong>{isSosBeta ? 'Games in hand (sample):' : 'Sample Size:'}</strong>{' '}
+                  {recommendation.evidence.sampleSize.toLocaleString()}
                 </p>
                 <div>
                   <strong>Alternatives:</strong>
                   <ul>
                     {recommendation.alternatives.map((alt) => (
                       <li key={alt.card}>
-                        {alt.card} ({(alt.score * 100).toFixed(0)}%)
+                        {alt.card} ({(alt.score * 100).toFixed(1)}%{isSosBeta ? ' GIH WR' : ''})
                       </li>
                     ))}
                   </ul>
@@ -322,7 +397,11 @@ function App() {
             <form className="chat-input" onSubmit={handleAsk}>
               <input
                 type="text"
-                placeholder="Ask about card comparisons, pivots, or confidence..."
+                placeholder={
+                  isSosBeta
+                    ? 'e.g. Is Together as One better than Practiced Offense?'
+                    : 'Ask about card comparisons, pivots, or confidence...'
+                }
                 value={question}
                 onChange={(event) => setQuestion(event.target.value)}
               />

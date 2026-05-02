@@ -9,17 +9,54 @@
   padding-bottom: 1rem;
 }
 
-.deploy-test-banner {
-  margin: 0 0 0.75rem;
-  padding: 0.45rem 0.65rem;
-  border-radius: 8px;
-  font-size: 0.95rem;
+.set-picker {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  margin-bottom: 0.75rem;
+  max-width: 28rem;
+}
+
+.set-picker-label {
   font-weight: 600;
-  letter-spacing: 0.02em;
-  text-align: center;
+  font-size: 0.9rem;
   color: var(--text-h);
-  background: var(--accent-bg);
-  border: 1px dashed var(--accent-border);
+}
+
+.beta-disclaimer {
+  margin: 0 0 0.85rem;
+  padding: 0.55rem 0.7rem;
+  border-radius: 8px;
+  font-size: 0.92rem;
+  line-height: 1.35;
+  background: rgba(245, 158, 11, 0.15);
+  border: 1px solid rgba(245, 158, 11, 0.45);
+  color: var(--text-h);
+}
+
+.tagline {
+  margin-top: 0.35rem;
+}
+
+.beta-field-note {
+  margin: 0 0 0.75rem;
+  padding: 0.45rem 0.55rem;
+  border-radius: 8px;
+  font-size: 0.88rem;
+  background: rgba(100, 116, 139, 0.12);
+  border: 1px solid var(--border);
+}
+
+.optional-hint {
+  font-size: 0.85rem;
+  font-weight: 400;
+  color: var(--text);
+}
+
+input:disabled,
+select:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
 }
 
 .app-header h1 {

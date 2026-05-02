@@ -1,6 +1,10 @@
 export type Rank = 'bronze' | 'silver' | 'gold' | 'platinum' | 'diamond' | 'mythic'
 
+/** TMT = Teenage Mutant Ninja Turtles draft dataset; SOS = Spark of the Spark-style aggregate stats (Beta). */
+export type ProductSetId = 'tmt' | 'sos'
+
 export interface DraftContext {
+  productSet: ProductSetId
   packNumber: number
   pickNumber: number
   rank: Rank
