@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import type { FormEvent } from 'react'
 import './App.css'
+import { AvailableCardsChips } from './components/AvailableCardsChips'
 import { askDraftAssistant, getRecommendation } from './mockApi'
 import { VALID_CARDS } from './validCards'
 import { isKnownSosCard } from './sosLookup'
@@ -63,9 +64,11 @@ function App() {
   const [packNumber, setPackNumber] = useState(1)
   const [pickNumber, setPickNumber] = useState(1)
   const [rank, setRank] = useState<Rank>('gold')
-  const [availableCardsInput, setAvailableCardsInput] = useState(
-    "The Last Ronin\nShredder's Technique\nMona Lisa, Science Geek"
-  )
+  const [availableCardsList, setAvailableCardsList] = useState<string[]>([
+    'The Last Ronin',
+    "Shredder's Technique",
+    'Mona Lisa, Science Geek',
+  ])
   const [poolCardsInput, setPoolCardsInput] = useState('Zoo Escapees\nAnchovy & Banana Pizza')
   const [question, setQuestion] = useState(
     "Is The Last Ronin better than Shredder's Technique here?"
@@ -83,10 +86,6 @@ function App() {
   const [isLoadingChat, setIsLoadingChat] = useState(false)
   const [contextError, setContextError] = useState<string | null>(null)
 
-  const parsedAvailableCards = useMemo(
-    () => parseCardList(availableCardsInput),
-    [availableCardsInput]
-  )
   const parsedPoolCards = useMemo(
     () => parseCardList(poolCardsInput),
     [poolCardsInput]
@@ -97,7 +96,7 @@ function App() {
     packNumber,
     pickNumber,
     rank,
-    availableCards: parsedAvailableCards,
+    availableCards: availableCardsList,
     poolCards: parsedPoolCards,
   }
 
@@ -106,7 +105,7 @@ function App() {
     setRecommendation(null)
     setContextError(null)
     if (next === 'sos') {
-      setAvailableCardsInput('Together as One\nPracticed Offense\nAntiquities on the Loose')
+      setAvailableCardsList(['Together as One', 'Practiced Offense', 'Antiquities on the Loose'])
       setPoolCardsInput('')
       setQuestion('Is Together as One better than Practiced Offense?')
       setChatMessages([
@@ -117,7 +116,11 @@ function App() {
         },
       ])
     } else {
-      setAvailableCardsInput("The Last Ronin\nShredder's Technique\nMona Lisa, Science Geek")
+      setAvailableCardsList([
+        'The Last Ronin',
+        "Shredder's Technique",
+        'Mona Lisa, Science Geek',
+      ])
       setPoolCardsInput('Zoo Escapees\nAnchovy & Banana Pizza')
       setQuestion("Is The Last Ronin better than Shredder's Technique here?")
       setChatMessages([
@@ -307,19 +310,14 @@ function App() {
               <option value="mythic">Mythic</option>
             </select>
           </label>
-          <label>
-            Available Cards (one per line)
-            <textarea
-              rows={4}
-              value={availableCardsInput}
-              onChange={(event) => setAvailableCardsInput(event.target.value)}
-              placeholder={
-                isSosBeta
-                  ? 'Together as One\nPracticed Offense\nAntiquities on the Loose'
-                  : "The Last Ronin\nShredder's Technique\nMona Lisa, Science Geek"
-              }
+          <div className="available-cards-field">
+            <span className="available-cards-label">Available cards</span>
+            <AvailableCardsChips
+              cards={availableCardsList}
+              onCardsChange={setAvailableCardsList}
+              productSet={productSet}
             />
-          </label>
+          </div>
           <label>
             Pool Cards (one per line){' '}
             {isSosBeta ? <span className="optional-hint">(optional in Beta)</span> : null}

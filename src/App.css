@@ -93,6 +93,104 @@ select:disabled {
   margin-bottom: 0.9rem;
 }
 
+.available-cards-field {
+  margin-bottom: 0.9rem;
+}
+
+.available-cards-label {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 0.35rem;
+  color: var(--text-h);
+}
+
+.available-cards-chips .chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-bottom: 0.45rem;
+  min-height: 0;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  max-width: 100%;
+  padding: 0.25rem 0.35rem 0.25rem 0.55rem;
+  border-radius: 999px;
+  font-size: 0.88rem;
+  background: rgba(170, 59, 255, 0.12);
+  border: 1px solid var(--accent-border);
+  color: var(--text-h);
+}
+
+.chip-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.chip-remove {
+  flex-shrink: 0;
+  padding: 0 0.35rem;
+  margin: 0;
+  min-width: 1.5rem;
+  line-height: 1.2;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font-size: 1.1rem;
+  color: var(--text-h);
+}
+
+.chip-remove:hover {
+  opacity: 0.75;
+}
+
+.chip-input-wrap {
+  position: relative;
+}
+
+.chip-search-input {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.chip-suggestions {
+  position: absolute;
+  z-index: 20;
+  left: 0;
+  right: 0;
+  top: calc(100% + 4px);
+  margin: 0;
+  padding: 0.25rem 0;
+  list-style: none;
+  max-height: 220px;
+  overflow-y: auto;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--panel-bg);
+  box-shadow: var(--shadow);
+}
+
+.chip-suggestion {
+  padding: 0.45rem 0.65rem;
+  cursor: pointer;
+  font-size: 0.92rem;
+}
+
+.chip-suggestion:hover,
+.chip-suggestion.is-active {
+  background: var(--accent-bg);
+}
+
+.chip-hint {
+  margin: 0.35rem 0 0;
+  font-size: 0.82rem;
+  color: var(--text);
+}
+
 .context-error {
   margin-top: 0.75rem;
   padding: 0.5rem 0.65rem;
