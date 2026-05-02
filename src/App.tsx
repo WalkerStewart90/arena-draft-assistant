@@ -201,8 +201,13 @@ function App() {
   return (
     <main className="app-shell">
       <header className="app-header">
-        <h1>Draft Pick Assistant</h1>
-        <p>Phase 1 prototype with mocked recommendation and chat responses.</p>
+        <p className="deploy-test-banner" role="status">
+          Visible deploy test · Phase 2 prototype prep
+        </p>
+        <h1>Draft Pick Assistant — Phase 2 prototype prep</h1>
+        <p>
+          Mock recommendation and chat for now. Next: Supabase + real draft stats.
+        </p>
       </header>
 
       <section className="layout">

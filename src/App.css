@@ -9,6 +9,19 @@
   padding-bottom: 1rem;
 }
 
+.deploy-test-banner {
+  margin: 0 0 0.75rem;
+  padding: 0.45rem 0.65rem;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-align: center;
+  color: var(--text-h);
+  background: var(--accent-bg);
+  border: 1px dashed var(--accent-border);
+}
+
 .app-header h1 {
   margin: 0;
 }
