@@ -311,7 +311,20 @@ function App() {
             </select>
           </label>
           <div className="available-cards-field">
-            <span className="available-cards-label">Available cards</span>
+            <div className="available-cards-header">
+              <span className="available-cards-label">Available cards</span>
+              <button
+                type="button"
+                className="btn-secondary"
+                onClick={() => {
+                  setAvailableCardsList([])
+                  setRecommendation(null)
+                  setContextError(null)
+                }}
+              >
+                Clear all
+              </button>
+            </div>
             <AvailableCardsChips
               cards={availableCardsList}
               onCardsChange={setAvailableCardsList}
