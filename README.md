@@ -1,4 +1,19 @@
-# React + TypeScript + Vite
+# Arena Draft Assistant
+
+React + TypeScript + Vite. **SOS (Beta)** loads aggregate stats from Supabase table `card_aggregates` when configured; otherwise it uses bundled data from `data/SOS.csv`.
+
+### Deploy (Netlify)
+
+In **Site configuration → Environment variables**, set (values from Supabase **Project Settings → API**; never commit real keys):
+
+- `VITE_SUPABASE_URL` — Data API URL  
+- `VITE_SUPABASE_ANON_KEY` — Publishable (browser) key  
+
+Trigger a **new deploy** after adding or changing these so Vite picks them up at build time.
+
+---
+
+## React + TypeScript + Vite
 
 This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
 

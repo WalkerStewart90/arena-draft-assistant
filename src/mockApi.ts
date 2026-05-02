@@ -1,5 +1,6 @@
 import type { ChatResponse, DraftContext, RecommendationResponse } from './types'
-import { getSosStat } from './sosLookup'
+import { getMergedSosCardStats } from './lib/sosStatsSource'
+import { getSosStatFromMap } from './sosLookup'
 
 const CARD_STRENGTH: Record<string, number> = {
   "The Last Ronin": 94,
@@ -83,9 +84,10 @@ async function getTmtRecommendation(context: DraftContext): Promise<Recommendati
 }
 
 async function getSosRecommendation(context: DraftContext): Promise<RecommendationResponse> {
+  const sosMap = await getMergedSosCardStats()
   const scored = context.availableCards
     .map((card) => {
-      const stat = getSosStat(card)
+      const stat = getSosStatFromMap(sosMap, card)
       return stat
         ? { card, gihWrPercent: stat.gihWrPercent, nGih: stat.nGih }
         : { card, gihWrPercent: -1, nGih: 0 }
@@ -95,7 +97,7 @@ async function getSosRecommendation(context: DraftContext): Promise<Recommendati
 
   const top = scored[0]
   const topPick = top?.card ?? 'No valid cards provided'
-  const topStat = top ? getSosStat(top.card) : null
+  const topStat = top ? getSosStatFromMap(sosMap, top.card) : null
   const alternatives = scored.slice(1, 3).map((row) => ({
     card: row.card,
     score: Number((row.gihWrPercent / 100).toFixed(4)),
@@ -155,11 +157,12 @@ async function askSosAssistant(
   context: DraftContext,
   recommendation: RecommendationResponse | null
 ): Promise<ChatResponse> {
+  const sosMap = await getMergedSosCardStats()
   const compared = extractComparedCards(question)
   if (compared.length === 2) {
     const [a, b] = compared
-    const statA = getSosStat(a)
-    const statB = getSosStat(b)
+    const statA = getSosStatFromMap(sosMap, a)
+    const statB = getSosStatFromMap(sosMap, b)
     if (statA && statB) {
       const better = statA.gihWrPercent >= statB.gihWrPercent ? statA : statB
       const worse = statA.gihWrPercent >= statB.gihWrPercent ? statB : statA
@@ -180,7 +183,7 @@ async function askSosAssistant(
   }
 
   const topPick = recommendation?.topPick ?? context.availableCards[0]
-  const stat = topPick ? getSosStat(topPick) : null
+  const stat = topPick ? getSosStatFromMap(sosMap, topPick) : null
   if (stat) {
     return {
       answer: [
