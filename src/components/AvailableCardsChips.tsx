@@ -7,7 +7,7 @@ import {
   type ClipboardEvent,
   type KeyboardEvent,
 } from 'react'
-import { SOS_CARD_STATS } from '../data/sosGiwr.generated'
+import { SOS_PREMIER_PICK_STATS } from '../data/sosPremierPickStats.generated'
 import { VALID_CARDS } from '../validCards'
 import type { ProductSetId } from '../types'
 
@@ -20,7 +20,7 @@ function norm(s: string): string {
 function buildCatalog(productSet: ProductSetId): string[] {
   if (productSet === 'sos') {
     const unique = new Set<string>()
-    for (const row of Object.values(SOS_CARD_STATS)) {
+    for (const row of Object.values(SOS_PREMIER_PICK_STATS)) {
       unique.add(row.displayName)
     }
     return [...unique].sort((a, b) => a.localeCompare(b))

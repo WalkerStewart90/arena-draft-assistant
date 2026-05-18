@@ -112,7 +112,7 @@ function App() {
         {
           id: 'welcome-sos',
           role: 'assistant',
-          text: 'Beta mode: ask simple GIH WR questions — e.g. compare two cards by name, or rank the cards you list.',
+          text: 'SOS Premier Draft: compare cards using full public pick logs — list a short list or ask "A vs B".',
         },
       ])
     } else {
@@ -237,7 +237,7 @@ function App() {
     }
   }
 
-  const isSosBeta = productSet === 'sos'
+  const isSosPremier = productSet === 'sos'
 
   return (
     <main className="app-shell">
@@ -249,17 +249,17 @@ function App() {
             onChange={(event) => handleProductSetChange(event.target.value as ProductSetId)}
           >
             <option value="tmt">Teenage Mutant Ninja Turtles (TMT)</option>
-            <option value="sos">SOS (Beta)</option>
+            <option value="sos">SOS Premier Draft</option>
           </select>
         </label>
-        {isSosBeta ? (
+        {isSosPremier ? (
           <p className="beta-disclaimer" role="note">
-            Beta: stats from early-season aggregates; GIH WR only; draft-specific modeling coming later.
+            Full SOS public Premier Draft pick data — ranking by average pick position and volume; optional beta GIH WR overlay when available.
           </p>
         ) : null}
         <h1>Draft Pick Assistant</h1>
         <p className="tagline">
-          {isSosBeta
+          {isSosPremier
             ? 'GIH WR quick stats from SOS aggregates — compare cards or rank your short list.'
             : 'TMT Premier Draft explorer — mock scoring until Supabase-backed stats ship.'}
         </p>
@@ -267,10 +267,10 @@ function App() {
 
       <section className="layout">
         <form className="panel context-panel" onSubmit={handleRecommend}>
-          <h2>{isSosBeta ? 'GIH WR short list' : 'Draft Context'}</h2>
-          {isSosBeta ? (
+          <h2>{isSosPremier ? 'Premier Draft short list' : 'Draft Context'}</h2>
+          {isSosPremier ? (
             <p className="beta-field-note">
-              Pack, pick, and rank are not used in Beta — ranking uses GIH WR only.
+              Pack, pick, and rank are not filtered yet — ranking uses aggregate pick position across all logged picks.
             </p>
           ) : null}
           <label>
@@ -280,7 +280,7 @@ function App() {
               min={1}
               max={3}
               value={packNumber}
-              disabled={isSosBeta}
+              disabled={isSosPremier}
               onChange={(event) => setPackNumber(Number(event.target.value))}
             />
           </label>
@@ -291,7 +291,7 @@ function App() {
               min={1}
               max={15}
               value={pickNumber}
-              disabled={isSosBeta}
+              disabled={isSosPremier}
               onChange={(event) => setPickNumber(Number(event.target.value))}
             />
           </label>
@@ -299,7 +299,7 @@ function App() {
             Rank
             <select
               value={rank}
-              disabled={isSosBeta}
+              disabled={isSosPremier}
               onChange={(event) => setRank(event.target.value as Rank)}
             >
               <option value="bronze">Bronze</option>
@@ -333,21 +333,21 @@ function App() {
           </div>
           <label>
             Pool Cards (one per line){' '}
-            {isSosBeta ? <span className="optional-hint">(optional in Beta)</span> : null}
+            {isSosPremier ? <span className="optional-hint">(optional)</span> : null}
             <textarea
               rows={4}
               value={poolCardsInput}
               onChange={(event) => setPoolCardsInput(event.target.value)}
               placeholder={
-                isSosBeta ? 'Optional — not used for GIH ranking yet' : 'Zoo Escapees\nAnchovy & Banana Pizza'
+                isSosPremier ? 'Optional — pool not used for ranking yet' : 'Zoo Escapees\nAnchovy & Banana Pizza'
               }
             />
           </label>
           <button type="submit" disabled={isLoadingRecommendation}>
             {isLoadingRecommendation
               ? 'Evaluating...'
-              : isSosBeta
-                ? 'Rank by GIH WR'
+              : isSosPremier
+                ? 'Rank by pick data'
                 : 'Get Recommendation'}
           </button>
           {contextError ? <p className="context-error">{contextError}</p> : null}
@@ -365,11 +365,11 @@ function App() {
                   <strong>Confidence:</strong> {(recommendation.confidence * 100).toFixed(0)}%
                 </p>
                 <p>
-                  <strong>{isSosBeta ? 'GIH WR (top pick):' : 'Win Rate:'}</strong>{' '}
+                  <strong>{isSosPremier ? 'Score (top pick):' : 'Win Rate:'}</strong>{' '}
                   {(recommendation.evidence.winRateTopPick * 100).toFixed(1)}%
                 </p>
                 <p>
-                  <strong>{isSosBeta ? 'Games in hand (sample):' : 'Sample Size:'}</strong>{' '}
+                  <strong>{isSosPremier ? 'Pick sample (volume):' : 'Sample Size:'}</strong>{' '}
                   {recommendation.evidence.sampleSize.toLocaleString()}
                 </p>
                 <div>
@@ -377,7 +377,7 @@ function App() {
                   <ul>
                     {recommendation.alternatives.map((alt) => (
                       <li key={alt.card}>
-                        {alt.card} ({(alt.score * 100).toFixed(1)}%{isSosBeta ? ' GIH WR' : ''})
+                        {alt.card} ({(alt.score * 100).toFixed(1)}%{isSosPremier ? ' score' : ''})
                       </li>
                     ))}
                   </ul>
@@ -409,7 +409,7 @@ function App() {
               <input
                 type="text"
                 placeholder={
-                  isSosBeta
+                  isSosPremier
                     ? 'e.g. Is Together as One better than Practiced Offense?'
                     : 'Ask about card comparisons, pivots, or confidence...'
                 }

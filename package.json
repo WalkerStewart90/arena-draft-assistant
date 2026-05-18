@@ -6,7 +6,11 @@
   "scripts": {
     "dev": "vite",
     "generate:sos": "node scripts/generate-sos-data.mjs",
-    "prebuild": "node scripts/generate-sos-data.mjs",
+    "aggregate:sos-premier": "node scripts/aggregate-sos-premier-picks.mjs",
+    "generate:sos-pick": "node scripts/generate-sos-pick-data.mjs",
+    "generate:sos-seed-sql": "node scripts/generate-sos-premier-seed-sql.mjs",
+    "seed:sos-premier": "node scripts/seed-sos-premier-picks.mjs",
+    "prebuild": "node scripts/generate-sos-data.mjs && node scripts/generate-sos-pick-data.mjs",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview"

@@ -1,6 +1,7 @@
 import type { ChatResponse, DraftContext, RecommendationResponse } from './types'
 import { getMergedSosCardStats } from './lib/sosStatsSource'
 import { getSosStatFromMap } from './sosLookup'
+import { formatSosStatSummary, sosRecommendationScore } from './sosScoring'
 
 const CARD_STRENGTH: Record<string, number> = {
   "The Last Ronin": 94,
@@ -88,35 +89,42 @@ async function getSosRecommendation(context: DraftContext): Promise<Recommendati
   const scored = context.availableCards
     .map((card) => {
       const stat = getSosStatFromMap(sosMap, card)
-      return stat
-        ? { card, gihWrPercent: stat.gihWrPercent, nGih: stat.nGih }
-        : { card, gihWrPercent: -1, nGih: 0 }
+      const score = stat ? sosRecommendationScore(stat) : -1
+      return stat ? { card, stat, score } : { card, stat: null, score: -1 }
     })
-    .filter((row) => row.gihWrPercent >= 0)
-    .sort((a, b) => b.gihWrPercent - a.gihWrPercent)
+    .filter((row) => row.score >= 0)
+    .sort((a, b) => b.score - a.score)
 
   const top = scored[0]
   const topPick = top?.card ?? 'No valid cards provided'
-  const topStat = top ? getSosStatFromMap(sosMap, top.card) : null
+  const topStat = top?.stat ?? null
   const alternatives = scored.slice(1, 3).map((row) => ({
     card: row.card,
-    score: Number((row.gihWrPercent / 100).toFixed(4)),
+    score: Number((row.score / 100).toFixed(4)),
   }))
 
-  const n = topStat?.nGih ?? 0
-  const gihDecimal = topStat ? topStat.gihWrPercent / 100 : 0
+  const sampleSize = topStat?.pickCount ?? topStat?.nGih ?? 0
+  const winRateTopPick = topStat
+    ? Number(
+        (
+          (topStat.gihWrPercent != null ? topStat.gihWrPercent / 100 : top.score / 100) || 0
+        ).toFixed(4)
+      )
+    : 0
 
   return {
     topPick,
     alternatives,
-    confidence: confidenceFromSampleSize(n),
+    confidence: confidenceFromSampleSize(sampleSize),
     reasons: [
-      `${topPick} has the highest Games-In-Hand win rate (GIH WR) among cards you listed, based on early-season aggregates.`,
-      'Pack, pick, and rank are not used in Beta — comparison is GIH WR only.',
+      `${topPick} ranks highest from SOS Premier Draft pick data (earlier average pick + volume).`,
+      topStat?.gihWrPercent != null
+        ? `Beta GIH WR reference: ${topStat.gihWrPercent.toFixed(1)}% (n=${(topStat.nGih ?? 0).toLocaleString()}).`
+        : 'Ranking uses full public Premier Draft pick logs, not pack/pick context yet.',
     ],
     evidence: {
-      sampleSize: n,
-      winRateTopPick: Number(gihDecimal.toFixed(4)),
+      sampleSize,
+      winRateTopPick,
     },
   }
 }
@@ -164,16 +172,16 @@ async function askSosAssistant(
     const statA = getSosStatFromMap(sosMap, a)
     const statB = getSosStatFromMap(sosMap, b)
     if (statA && statB) {
-      const better = statA.gihWrPercent >= statB.gihWrPercent ? statA : statB
-      const worse = statA.gihWrPercent >= statB.gihWrPercent ? statB : statA
-      const gap = Math.abs(statA.gihWrPercent - statB.gihWrPercent)
+      const scoreA = sosRecommendationScore(statA)
+      const scoreB = sosRecommendationScore(statB)
+      const better = scoreA >= scoreB ? statA : statB
+      const worse = scoreA >= scoreB ? statB : statA
       return {
         answer: [
-          `By GIH WR: ${better.displayName} (${better.gihWrPercent.toFixed(1)}%, n=${better.nGih.toLocaleString()})`,
-          `vs ${worse.displayName} (${worse.gihWrPercent.toFixed(1)}%, n=${worse.nGih.toLocaleString()}).`,
-          `Gap ≈ ${gap.toFixed(1)} percentage points (Beta — early-season aggregates).`,
+          `Preferred: ${formatSosStatSummary(better)}`,
+          `vs ${formatSosStatSummary(worse)}.`,
         ].join(' '),
-        citations: ['SOS aggregate CSV → GIH WR', 'Games in hand sample (# GIH)'],
+        citations: ['SOS Premier Draft public pick logs', 'Optional beta GIH WR overlay'],
         followUps: [
           'Add both to “Available cards” and run Get Recommendation for a ranked list.',
           'Ask about another pair using “A vs B”.',
@@ -187,19 +195,19 @@ async function askSosAssistant(
   if (stat) {
     return {
       answer: [
-        `GIH WR focus (Beta): ${stat.displayName} is at ${stat.gihWrPercent.toFixed(1)}% GIH WR with ${stat.nGih.toLocaleString()} games-in-hand sample.`,
-        `Your question: "${question}" — try "Is [Card A] better than [Card B]?" for a direct GIH WR comparison.`,
+        formatSosStatSummary(stat),
+        `Your question: "${question}" — try "Is [Card A] better than [Card B]?" for a direct comparison.`,
       ].join(' '),
-      citations: ['SOS aggregate CSV → GIH WR'],
+      citations: ['SOS Premier Draft public pick logs'],
       followUps: ['Compare two cards by name ("X vs Y").', 'List candidates under Available cards and click Get Recommendation.'],
     }
   }
 
   return {
     answer:
-      'Beta mode answers quick GIH WR questions. Name two cards in a compare ("Card A vs Card B"), or list cards under Available cards and use Get Recommendation.',
-    citations: ['SOS aggregate CSV → GIH WR'],
-    followUps: ['Try: "Is Practiced Offense better than Together as One?"', 'Fill Available cards (one per line) from your current pack.'],
+      'SOS mode uses Premier Draft pick data. Name two cards ("Card A vs Card B"), or list cards under Available cards and use Get Recommendation.',
+    citations: ['SOS Premier Draft public pick logs'],
+    followUps: ['Try: "Is Practiced Offense better than Together as One?"', 'Fill Available cards from your current pack.'],
   }
 }
 
